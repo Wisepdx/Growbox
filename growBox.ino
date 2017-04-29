@@ -3,8 +3,8 @@
 #include <TimeAlarms.h>
 #include <WiFiUdp.h>
 
-const char* ssid = "SSID HERE";
-const char* password = "PASSWORD HERE";
+const char* ssid = "SadPanda";
+const char* password = "703e1931af";
 
 int lightCycleHours;
 int waterDelay;
@@ -125,42 +125,38 @@ void loop() {
   client.println(""); //  do not forget this one
   client.println("<!DOCTYPE HTML>");
   client.println("<html>");
-  client.println("<h1>Growbox Project</h1>");
-
-  // Output Current Settings
-  client.println("<b>Current Settings</b><br/>");
+  client.println("<head><link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css' integrity='sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ' crossorigin='anonymous'><script src='https://code.jquery.com/jquery-3.1.1.slim.min.js' integrity='sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n' crossorigin='anonymous'></script><script src='https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js' integrity='sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb' crossorigin='anonymous'></script><script src='https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js' integrity='sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn' crossorigin='anonymous'></script></head>");
+  client.println("<body><div class='container'><h1>Growbox Project</h1><ul class='nav nav-tabs' role='tablist'><li class='nav-item'><a class='nav-link active' data-toggle='tab' href='#Current' role='tab'>Current Settings</a></li><li class='nav-item'>");
+  client.println("<a class='nav-link' data-toggle='tab' href='#Change' role='tab'>Change Settings</a></li></ul><br/><div class='tab-content'><div class='tab-pane active' id='Current' role='tabpanel'><div class='container'><h3>Current Settings</h3><br/><div class='row'>");
+  client.print("<div class='col-12'><p><strong>Page Last Updated:</strong> ");
+  client.print(String(hour()) + ":");//##:##
+  if (minute() <10){client.print("0");}
+  client.print(String(minute()));
+  client.print("</p>");
   if (startTimeHour){
-    client.print("Timer Start Time: " + String(startTimeHour));
+    client.print("<p><strong>Timer Start Time:</strong> " + String(startTimeHour));
     client.print(":");
     if(startTimeMinute < 10){
       client.print('0');
     }
-    client.print(String(startTimeMinute) + " <br/>");
+    client.print(String(startTimeMinute) + " </p>");
   }
-  if (lightCycleHours){ client.println("Light Cycle: " + String(lightCycleHours) + " hours<br/>");}
-  if (waterDelay){ client.println("Watering Interval: " + String(waterDelay) +" hours<br/>");}
-  if (waterTime){ client.println("Watering Time " + String(waterTime) + " minutes<br/>");}
-  if (dst){client.println("Daylight Saving is in effect.");}
-
-  // HTML Form
-  client.println("<form  method='get' action=''>");
-  client.println("<label for='t1'>Turn On Lights At (##:##) </label>");
-  client.println("<input id='t1' name='t1' type='text' maxlength='10' value=''/> ");
-  client.println("<br/>");
-  client.println("<label for='e1'>Length of Light On Cycle (Hours) </label>");
-  client.println("<input id='e1' name='e1' type='text' maxlength='4' value=''/> ");
-  client.println("<br/>");
-  client.println("<label for='e2'>Watering Time </label>");
-  client.println("<input id='e2' name='e2' type='text' maxlength='4' value=''/> ");
-  client.println("<br/>");
-  client.println("<label for='e3'>Delay Between Water Cycles </label>");
-  client.println("<input id='e3' name='e3' type='text' maxlength='4' value=''/> ");
-  client.println("<br/>");
-  client.println("<label for='e4'>Daylight Savings Time </label>");
-  client.println("<input id='e4' name='e4' type='checkbox' value='true'/> ");
-  client.println("<br/>");
-  client.println("<input type='submit' value='Submit' />  ");
+  if (lightCycleHours){ client.println("<p><strong>Length of Light Cycle:</strong> " + String(lightCycleHours) + " hours</p>");}
+  if (waterDelay){ client.println("<p><strong>Time Between Waterings:</strong> " + String(waterDelay) +" hours</p>");}
+  if (waterTime){ client.println("<p><strong>Watering Length:</strong> " + String(waterTime) + " minutes</p>");}
+  if (dst){client.println("<div class='alert alert-info' role='alert'>daylights savings time is currently: active</div>");}
+  client.print("</div></div>");
+  client.println("</div></div><div class='tab-pane' id='Change' role='tabpanel'><div class='container'><div class='row'><div class='col-12'>");
+  client.println("<form method='get' action=''>");
+  client.println("<div class='form-group row'><h3> Submit New Settings </h3></div>");
+  client.println("<div class='form-group row'><label class='' for='t1'>Turn On Lights At:</label><input class='form-control' id='t1' name='t1' type='text' maxlength='10' value='' placeholder='00:00' /></div>");
+  client.println("<div class='form-group row'><label for='e1'>Length of Light On Cycle (Hours) </label><input class='form-control' id='e1' name='e1' type='text' maxlength='4' value='' placeholder='0' /></div>");
+  client.println("<div class='form-group row'><label for='e2'>Watering Time </label><input class='form-control' id='e2' name='e2' type='text' maxlength='4' value='' placeholder='0' /></div>");
+  client.println("<div class='form-group row'><label for='e3'>Delay Between Water Cycles </label><input class='form-control' id='e3' name='e3' type='text' maxlength='4' value='' placeholder='0' /></div>");
+  client.println("<div class='form-group row'><label for='e4'>Turn on Daylight Savings Time </label><input class='form-control' id='e4' name='e4' type='checkbox' value='true' /></div>");
+  client.println("<div class='form-group row'><button type='submit' class='btn btn-primary' value='Submit'>Submit</button></div>");
   client.println("</form>");
+  client.println("</div></div></div></div></div></div></body>");
 
   Alarm.delay(1);
   //Serial.println("Client disconnected");
