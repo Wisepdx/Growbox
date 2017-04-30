@@ -299,7 +299,7 @@ void waterCycle(){
 
 void waterOff(){
   // log event - turn water off
-  Serial.printl("Turning the water off at ");
+  Serial.print("Turning the water off at ");
   // current time
   digitalClockDisplay();
 
