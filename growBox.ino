@@ -6,6 +6,7 @@
 const char* ssid = "SadPanda";
 const char* password = "703e1931af";
 
+// Variables
 int lightCycleHours;
 int waterDelay;
 int waterTime;
@@ -17,15 +18,13 @@ int lightOnID;
 int lightOffID;
 int waterCycleID;
 
-bool dst = false; //false = no, true = yes
+bool dst = true; // apply day light savings  | false = no, true = yes
 
 WiFiServer server(80);
 
-unsigned int localPort = 2390;      // local port to listen for UDP packets
+unsigned int localPort = 2390; // local port to listen for UDP packets
 
-/* Don't hardwire the IP address or we won't get the benefits of the pool.
- *  Lookup the IP address for the host name instead */
-//IPAddress timeServer(129, 6, 15, 28); // time.nist.gov NTP server
+// NTP
 IPAddress timeServerIP; // time.nist.gov NTP server address
 const char* ntpServerName = "time.nist.gov";
 
@@ -118,8 +117,7 @@ void loop() {
   // clear any current alarms and set  new alarms
   ClearAlarms();
 
-  // Make HTML Page for next request:
-  // Return the response
+  // Make HTML Page Response:
   client.println("HTTP/1.1 200 OK");
   client.println("Content-Type: text/html");
   client.println(""); //  do not forget this one
@@ -145,6 +143,7 @@ void loop() {
   if (waterDelay){ client.println("<p><strong>Time Between Waterings:</strong> " + String(waterDelay) +" hours</p>");}
   if (waterTime){ client.println("<p><strong>Watering Length:</strong> " + String(waterTime) + " minutes</p>");}
   if (dst){client.println("<div class='alert alert-info' role='alert'>daylights savings time is currently: active</div>");}
+  if (!startTimeHour){client.println("<div class='alert alert-info' role='alert'>There are currently no information available</div>");}
   client.print("</div></div>");
   client.println("</div></div><div class='tab-pane' id='Change' role='tabpanel'><div class='container'><div class='row'><div class='col-12'>");
   client.println("<form method='get' action=''>");
@@ -216,13 +215,15 @@ void SetAlarms(){
       }
     }
 
-    // Set Water Cycle Alarm and start immediately
+    // set water cycle alarm and start immediately
     Alarm.timerOnce(1, waterCycle);
     Alarm.timerRepeat(waterDelay * 3600, waterCycle); //seconds
+
+    // log event to serial
     Serial.print("Alarms have been set -- ");
     digitalClockDisplay();
 
-    //Output Alarms to Serial
+    // log variables to serial
     Serial.println("Light cycle length in hours: " + String(lightCycleHours));
     Serial.print("Start Time: ");
     printDisplayTime(startTimeHour,startTimeMinute);
@@ -231,12 +232,13 @@ void SetAlarms(){
     Serial.println("Delay Between Water Cycles: " + String(waterDelay) + " hours");
     Serial.println("Watering Time: " + String(waterTime) + " minutes");
 
-    //Output Alarms info
+    // log alarms information
     Serial.print("Turn on lights at ");
     printDisplayTime(startTimeHour,startTimeMinute);
+    Serial.print("Turn off lights at ");
     printDisplayTime(endTimeHour,endTimeMinute);
 
-    Serial.println("Length of cycle: " + String(lightCycleHours));
+    Serial.println("Length of cycle: " + String(lightCycleHours) + " hours");
     Serial.println("Water cycle length: " + String(waterDelay) + " hours");
     Serial.println("Run water for " + String(waterTime) + " minutes");
   } else{
@@ -248,61 +250,62 @@ void ClearAlarms(){
   if (lightOnID != NULL) {Alarm.free(lightOnID);}
   if (lightOffID != NULL) {Alarm.free(lightOffID);}
   if (waterCycleID != NULL) {Alarm.free(waterCycleID);}
-  Serial.print("Clearing all Alarm IDs -- ");
-
-  //Print Current Time
+  Serial.print("Clearing all Alarm IDs at ");
+  // print Current Time
   digitalClockDisplay();
 
-  // Reset new alarms
+  // reset new alarms
   SetAlarms();
 }
 
 void lightOn(){
-  Serial.print("Turning on lights for " + String(lightCycleHours) + " hours. -- ");
+  Serial.print("Turning on lights for " + String(lightCycleHours) + " hours at ");
+  // print Current Time
+  digitalClockDisplay();
+
   // -- TURN ON LIGHT RELAY
 
-  //set ID to variable
+  // set ID to variable
   lightOnID = Alarm.getTriggeredAlarmId();
-
-  //Print Current Time
-  digitalClockDisplay();
 }
 
 void lightOff(){
-  Serial.print("Turning off lights for " + String(24 - lightCycleHours) + " hours. -- ");
+  Serial.print("Turning off lights for " + String(24 - lightCycleHours) + " hours at ");
+  // print Current Time
+  digitalClockDisplay();
+
   // -- TURN OFF LIGHT RELAY
 
-  //set ID to variable
+  // set ID to variable
   lightOffID = Alarm.getTriggeredAlarmId();
 
-  //Print Current Time
-  digitalClockDisplay();
+
 }
 
 void waterCycle(){
-  //turn water on
-  Serial.print("Turn on Water for " + String(waterTime) + " minutes and repeat every " + String(waterDelay) + " hours. -- ");
+  // turn water on
+  Serial.print("Turn on Water for " + String(waterTime) + " minutes and repeating every " + String(waterDelay) + " hours. at ");
+  // current time
+  digitalClockDisplay();
+
   // -- TURN ON WATER RELAY
 
-  //set ID to variable
+  // set ID to variable
   waterCycleID = Alarm.getTriggeredAlarmId();
 
   // Set Timer to Turn off pump
   Alarm.timerOnce(waterTime * 60, waterOff);  //number of seconds
-
-  //Print Current Time
-  digitalClockDisplay();
 }
 
 void waterOff(){
-  //turn water off
-  Serial.println("Turning the water off -- ");
-
-  //Print Current Time
+  // log event - turn water off
+  Serial.printl("Turning the water off at ");
+  // current time
   digitalClockDisplay();
 
   // use Alarm.free() to disable a timer and recycle its memory.
   Alarm.free(id);
+
   // optional, but safest to "forget" the ID after memory recycled
   id = dtINVALID_ALARM_ID;
 
@@ -358,16 +361,16 @@ void readRequest(String message){
     if (i == 0){
       // the first letter will always be the name
       readingName = true;
-      //variableName += currentCharacter;
+      // variableName += currentCharacter;
     } else if(currentCharacter == '&'){
       // starting the next variable
       readingName = true;
 
       // if there is a name recorded
       if (variableName != ""){
-        // Write variables
+        // write variables
         recordVariablesFromWeb(variableName, variableValue);
-        // Reset variables for possible next in string 'message'
+        // reset variables for possible next in string 'message'
         variableName = "";
         variableValue = "";
       }
@@ -392,8 +395,6 @@ void readRequest(String message){
 void recordVariablesFromWeb(String variableName, String variableValue){
   // set values to their particular variables in this section
   // parse Variables to the Proper Variable
-  //--//Serial.println(variableName);
-  //--//Serial.println(variableValue);
 
   // variable t1
   if(variableName == "t1"){
@@ -414,13 +415,10 @@ void recordVariablesFromWeb(String variableName, String variableValue){
         }
       }
     }
+
     // set start times
     startTimeHour = hourString.toInt();
     startTimeMinute = minuteString.toInt();
-
-
-
-
   }
   // variable e1
   if(variableName == "e1"){
@@ -442,15 +440,16 @@ void recordVariablesFromWeb(String variableName, String variableValue){
       Serial.println("Setting daylight saving to true");
       }
   }
-  // Add more else if's if needed,else...dont
+  // add more else if's if needed, else... don't.
 }
 
 void NtpRequest()
 {
-  //get a random server from the pool
+  // get a random server from the pool
   WiFi.hostByName(ntpServerName, timeServerIP);
+  // send an NTP packet to a time server
+  sendNTPpacket(timeServerIP);
 
-  sendNTPpacket(timeServerIP); // send an NTP packet to a time server
   // wait to see if a reply is available
   delay(1000);
 
@@ -459,32 +458,21 @@ void NtpRequest()
     Serial.println("no packet yet");
   }
   else {
-    //--//Serial.print("packet received, length=");
-    //--//Serial.println(cb);
     // We've received a packet, read the data from it
     udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
-
-    //the timestamp starts at byte 40 of the received packet and is four bytes,
+    // the timestamp starts at byte 40 of the received packet and is four bytes,
     // or two words, long. First, esxtract the two words:
-
     unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
     unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
     // combine the four bytes (two words) into a long integer
     // this is NTP time (seconds since Jan 1 1900):
     unsigned long secsSince1900 = highWord << 16 | lowWord;
-    //--//Serial.print("Seconds since Jan 1 1900 = " );
-    //--//Serial.println(secsSince1900);
-
-    // now convert NTP time into everyday time:
-    //--//Serial.print("Unix time = ");
     // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
     const unsigned long seventyYears = 2208988800UL;
     // subtract seventy years:
     unsigned long epoch = secsSince1900 - seventyYears;
-    // print Unix time:
-    //--//Serial.println(epoch);
 
-    // print the hour, minute and second:
+    // print the hour, minute and second for UTC:
     Serial.print("The UTC time is ");       // UTC is the time at Greenwich Meridian (GMT)
     Serial.print((epoch  % 86400L) / 3600); // print the hour (86400 equals secs per day)
     Serial.print(':');
@@ -506,13 +494,10 @@ void NtpRequest()
     } else{
       setTime(epoch - 28800); //8 Hour Delay DST
     }
-
+    // print the hour, minute for local time:
     Serial.print("The local time is: ");
     digitalClockDisplay();
   }
-
-  // wait ten seconds before asking for the time again
-  //delay(10000);
 }
 
 // send an NTP request to the time server at the given address
