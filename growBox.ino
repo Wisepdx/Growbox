@@ -43,7 +43,6 @@ void setup() {
 
   // Connect to WiFi network
   Serial.println();
-  Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
@@ -170,8 +169,6 @@ void loop() {
 */
 
 void calcEndTime(){
-
-  Serial.println("----END TIME --");
   //set the end hour based on the start hour and length
   endTimeHour = startTimeHour + lightCycleHours;
 
@@ -182,7 +179,6 @@ void calcEndTime(){
 
   //set the end minute to the same as the start minute
   endTimeMinute = startTimeMinute;
-
 }
 
 /*
@@ -250,18 +246,14 @@ void ClearAlarms(){
   if (lightOnID != NULL) {Alarm.free(lightOnID);}
   if (lightOffID != NULL) {Alarm.free(lightOffID);}
   if (waterCycleID != NULL) {Alarm.free(waterCycleID);}
-  Serial.print("Clearing all Alarm IDs at ");
-  // print Current Time
-  digitalClockDisplay();
+  outputDebug("Clearing all Alarm IDs");
 
   // reset new alarms
   SetAlarms();
 }
 
 void lightOn(){
-  Serial.print("Turning on lights for " + String(lightCycleHours) + " hours at ");
-  // print Current Time
-  digitalClockDisplay();
+  outputDebug("Turning on lights for " + String(lightCycleHours) + " hours");
 
   // -- TURN ON LIGHT RELAY
 
@@ -270,9 +262,7 @@ void lightOn(){
 }
 
 void lightOff(){
-  Serial.print("Turning off lights for " + String(24 - lightCycleHours) + " hours at ");
-  // print Current Time
-  digitalClockDisplay();
+  outputDebug("Turning off lights for " + String(24 - lightCycleHours) + " hours");
 
   // -- TURN OFF LIGHT RELAY
 
@@ -283,10 +273,7 @@ void lightOff(){
 }
 
 void waterCycle(){
-  // turn water on
-  Serial.print("Turn on Water for " + String(waterTime) + " minutes and repeating every " + String(waterDelay) + " hours. at ");
-  // current time
-  digitalClockDisplay();
+  outputDebug("Turn on Water for " + String(waterTime) + " minutes and repeating every " + String(waterDelay) + " hours");
 
   // -- TURN ON WATER RELAY
 
@@ -298,10 +285,8 @@ void waterCycle(){
 }
 
 void waterOff(){
-  // log event - turn water off
-  Serial.print("Turning the water off at ");
-  // current time
-  digitalClockDisplay();
+  // output debug line
+  outputDebug("Turning the water off");
 
   // use Alarm.free() to disable a timer and recycle its memory.
   Alarm.free(id);
@@ -316,6 +301,13 @@ void waterOff(){
 -- Display Functions --
 -----------------------------
 */
+
+void outputDebug(String debugLine){
+  Serial.print(debugLine);
+  Serial.print(" at ");
+  // current time
+  digitalClockDisplay();
+}
 
 void digitalClockDisplay()
 {
