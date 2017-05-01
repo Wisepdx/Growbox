@@ -2,11 +2,12 @@
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 #include <WiFiUdp.h>
+#include "DHT.h"
 
 const char* ssid = "SadPanda";
 const char* password = "703e1931af";
 
-// Variables
+// variables
 int lightCycleHours;
 int waterDelay;
 int waterTime;
@@ -17,6 +18,20 @@ int endTimeMinute;
 int lightOnID;
 int lightOffID;
 int waterCycleID;
+float temp;
+float humidity;
+
+// defining PINS
+#define DHTPIN 5     // pin D1
+const int RELAY1 = 16; // pin D0 -- Fan
+const int RELAY2 = 4; // pin D2 -- Light
+const int RELAY3 = 0; // pin D3 -- Water Pump
+const int RELAY4 = 2; // pin D4
+
+
+// DHT temp/ humidity sensor setup
+#define DHTTYPE DHT11   // DHT 11
+DHT dht(DHTPIN, DHTTYPE);
 
 bool dst = true; // apply day light savings  | false = no, true = yes
 
@@ -30,15 +45,30 @@ const char* ntpServerName = "time.nist.gov";
 
 const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
 
-byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
+byte packetBuffer[ NTP_PACKET_SIZE]; // buffer to hold incoming and outgoing packets
 
-// A UDP instance to let us send and receive packets over UDP
+// a UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
 AlarmId id;
 
 void setup() {
   Serial.begin(115200);
+
+  // setup relays and default to off position
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  pinMode(RELAY3, OUTPUT);
+  pinMode(RELAY4, OUTPUT);
+  digitalWrite(RELAY1, HIGH);
+  digitalWrite(RELAY2, HIGH);
+  digitalWrite(RELAY3, HIGH);
+  digitalWrite(RELAY4, HIGH);
+
+  // initialize dht sensor
+  dht.begin();
+
+  // some delay...
   delay(10);
 
   // Connect to WiFi network
@@ -77,11 +107,17 @@ void setup() {
 }
 
 void loop() {
+  delay(5000);
 
-  Alarm.delay(1000);
-  Serial.print(".");
-  //Serial.println(hour());
-  //Serial.println(minute());
+  readDHT();
+
+  if (temp > 90){
+    // -- FAN RELAY ON
+    digitalWrite(RELAY1, LOW);
+  } else{
+    // -- FAN RELAY OFF
+    digitalWrite(RELAY1, HIGH);
+  }
 
   // Check if a client has connected
   WiFiClient client = server.available();
@@ -162,6 +198,25 @@ void loop() {
 
 }
 
+void readDHT(){
+  // warning sensor can be slow
+  humidity = dht.readHumidity();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  temp = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(humidity) || isnan(temp)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // uncomment if you want constant output
+  // outputDebug("Humidity:" + humidity + " %");
+  // outputDebug("Temperature (F):" + temp + " *F");
+}
+
+
+
 /*
 -----------------------------
 -- Calc Functions --
@@ -200,14 +255,16 @@ void SetAlarms(){
     if (startTimeHour < endTimeHour){
       if ((hour() >= startTimeHour) && (minute() >= startTimeMinute) &&
         (hour() <= endTimeHour) && (minute() < endTimeMinute)){
-        Serial.println(" In range, turning lights on --");
+        outputDebug("In range, turning lights on");
         // -- TURN ON LIGHT RELAY
+        digitalWrite(RELAY2, LOW);
       }
     } else if (startTimeHour > endTimeHour) {
       if ( ((hour() >= startTimeHour) && (minute() >= startTimeMinute)) ||
         ((hour() <= endTimeHour) && (minute() < endTimeMinute)) ){
-        Serial.println("In range, turning the lights on --");
+        outputDebug("In range, turning lights on");
         // -- TURN ON LIGHT RELAY
+        digitalWrite(RELAY2, LOW);
       }
     }
 
@@ -216,8 +273,7 @@ void SetAlarms(){
     Alarm.timerRepeat(waterDelay * 3600, waterCycle); //seconds
 
     // log event to serial
-    Serial.print("Alarms have been set -- ");
-    digitalClockDisplay();
+    outputDebug("Alarms have been set");
 
     // log variables to serial
     Serial.println("Light cycle length in hours: " + String(lightCycleHours));
@@ -256,6 +312,7 @@ void lightOn(){
   outputDebug("Turning on lights for " + String(lightCycleHours) + " hours");
 
   // -- TURN ON LIGHT RELAY
+  digitalWrite(RELAY2, LOW);
 
   // set ID to variable
   lightOnID = Alarm.getTriggeredAlarmId();
@@ -265,17 +322,17 @@ void lightOff(){
   outputDebug("Turning off lights for " + String(24 - lightCycleHours) + " hours");
 
   // -- TURN OFF LIGHT RELAY
+  digitalWrite(RELAY2, HIGH);
 
   // set ID to variable
   lightOffID = Alarm.getTriggeredAlarmId();
-
-
 }
 
 void waterCycle(){
   outputDebug("Turn on Water for " + String(waterTime) + " minutes and repeating every " + String(waterDelay) + " hours");
 
   // -- TURN ON WATER RELAY
+  digitalWrite(RELAY3, LOW);
 
   // set ID to variable
   waterCycleID = Alarm.getTriggeredAlarmId();
@@ -287,6 +344,9 @@ void waterCycle(){
 void waterOff(){
   // output debug line
   outputDebug("Turning the water off");
+
+  // -- TURN OFF WATER RELAY
+  digitalWrite(RELAY3, HIGH);
 
   // use Alarm.free() to disable a timer and recycle its memory.
   Alarm.free(id);
