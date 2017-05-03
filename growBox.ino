@@ -2,10 +2,10 @@
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 #include <WiFiUdp.h>
-#include "DHT.h"
+#include <DHT.h>
 
-const char* ssid = "SadPanda";
-const char* password = "703e1931af";
+const char* ssid = "ssid";
+const char* password = "change me";
 
 // variables
 int lightCycleHours;
@@ -18,6 +18,8 @@ int endTimeMinute;
 int lightOnID;
 int lightOffID;
 int waterCycleID;
+int checkTempID;
+int fanTriggerTemp = 90;
 float temp;
 float humidity;
 
@@ -107,17 +109,6 @@ void setup() {
 }
 
 void loop() {
-  delay(5000);
-
-  readDHT();
-
-  if (temp > 90){
-    // -- FAN RELAY ON
-    digitalWrite(RELAY1, LOW);
-  } else{
-    // -- FAN RELAY OFF
-    digitalWrite(RELAY1, HIGH);
-  }
 
   // Check if a client has connected
   WiFiClient client = server.available();
@@ -131,6 +122,7 @@ void loop() {
   while(!client.available()){
     Alarm.delay(1000);
   }
+  
   digitalClockDisplay();
   Serial.println("dst value: " + String(dst));
   // Read the first line of the request
@@ -198,8 +190,9 @@ void loop() {
 
 }
 
-void readDHT(){
-  // warning sensor can be slow
+void checkTemp(){
+  
+  // Checking sensor can be slow
   humidity = dht.readHumidity();
   // Read temperature as Fahrenheit (isFahrenheit = true)
   temp = dht.readTemperature(true);
@@ -210,6 +203,17 @@ void readDHT(){
     return;
   }
 
+  // turn the fan on if needed
+  if (temp > fanTriggerTemp){
+    // -- FAN RELAY ON
+    digitalWrite(RELAY1, LOW);
+  } else{
+    // -- FAN RELAY OFF
+    digitalWrite(RELAY1, HIGH);
+  }
+
+  checkTempID = Alarm.getTriggeredAlarmId();
+  
   // uncomment if you want constant output
   // outputDebug("Humidity:" + humidity + " %");
   // outputDebug("Temperature (F):" + temp + " *F");
@@ -272,6 +276,10 @@ void SetAlarms(){
     Alarm.timerOnce(1, waterCycle);
     Alarm.timerRepeat(waterDelay * 3600, waterCycle); //seconds
 
+    // start the temp read and fan check function
+    Alarm.timerOnce(1, checkTemp);
+    Alarm.timerRepeat(5000, checkTemp);
+
     // log event to serial
     outputDebug("Alarms have been set");
 
@@ -302,6 +310,7 @@ void ClearAlarms(){
   if (lightOnID != NULL) {Alarm.free(lightOnID);}
   if (lightOffID != NULL) {Alarm.free(lightOffID);}
   if (waterCycleID != NULL) {Alarm.free(waterCycleID);}
+  if (checkTempID != NULL) {Alarm.free(checkTempID);}
   outputDebug("Clearing all Alarm IDs");
 
   // reset new alarms
