@@ -4,8 +4,8 @@
 #include <WiFiUdp.h>
 #include <DHT.h>
 
-const char* ssid = "Chihiro";
-const char* password = "703e1931af";
+const char* ssid = "NETWORK";
+const char* password = "PASSWORD";
 
 // variables
 int lightCycleHours;
@@ -22,6 +22,7 @@ int checkTempID;
 int fanTriggerTemp = 90;
 float temp;
 float humidity;
+String logOutput[5];
 
 // defining PINS
 #define DHTPIN 5     // pin D1
@@ -113,6 +114,7 @@ void loop() {
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
+    Alarm.delay(1000);
     return;
   }
 
@@ -190,6 +192,13 @@ void loop() {
 
 }
 
+
+/*
+-----------------------------
+------- DHT Functions -------
+-----------------------------
+*/
+
 void checkTemp(){
   
   // Checking sensor can be slow
@@ -223,7 +232,7 @@ void checkTemp(){
 
 /*
 -----------------------------
--- Calc Functions --
+------ Calc Functions -------
 -----------------------------
 */
 
@@ -250,8 +259,8 @@ void SetAlarms(){
 
   if ((startTimeHour != NULL) && (waterDelay != NULL) && (waterTime != NULL)){
     // Set Light On Alarm
-    //Alarm.alarmRepeat(startTimeHour,startTimeMinute,0, lightOn);
-    Alarm.alarmRepeat(20,36,0, lightOn);
+    Alarm.alarmRepeat(startTimeHour,startTimeMinute,0, lightOn);
+    //Alarm.alarmRepeat(20,10,0, lightOn);
 
     // Set Light Off Alarm
     Alarm.alarmRepeat(endTimeHour,endTimeMinute,0, lightOff);
@@ -368,7 +377,7 @@ void waterOff(){
 
 /*
 -----------------------------
--- Display Functions --
+----- Display Functions -----
 -----------------------------
 */
 
@@ -403,6 +412,34 @@ void printDisplayTime(int hours, int minutes){
     Serial.print('0');
   Serial.print(minutes);
   Serial.println();
+}
+
+/*
+--------------------------------
+----- Log Output Functions -----
+--------------------------------
+*/
+
+// write log to array
+void writeLogArray(String log){
+  
+  // if no log slot open then move all logs up one slot and fill last slot
+  if (logOutput[4] != NULL){
+    for(int i=1;i<5;i++){
+      logOutput[i-1] = logOutput[i];
+    }
+    //fill last slot
+    logOutput[4] = log;
+  } else{
+    //check for an open log slot and print
+    for(int i=0;i<5;i++){
+      if (logOutput[i] == NULL){
+        logOutput[i] = log;
+        break;
+      }
+    }
+  }
+
 }
 
 /*
