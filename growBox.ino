@@ -4,8 +4,8 @@
 #include <WiFiUdp.h>
 #include <DHT.h>
 
-const char* ssid = "ssid";
-const char* password = "change me";
+const char* ssid = "Chihiro";
+const char* password = "703e1931af";
 
 // variables
 int lightCycleHours;
@@ -250,7 +250,8 @@ void SetAlarms(){
 
   if ((startTimeHour != NULL) && (waterDelay != NULL) && (waterTime != NULL)){
     // Set Light On Alarm
-    Alarm.alarmRepeat(startTimeHour,startTimeMinute,0, lightOn);
+    //Alarm.alarmRepeat(startTimeHour,startTimeMinute,0, lightOn);
+    Alarm.alarmRepeat(20,36,0, lightOn);
 
     // Set Light Off Alarm
     Alarm.alarmRepeat(endTimeHour,endTimeMinute,0, lightOff);
