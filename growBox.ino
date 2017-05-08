@@ -28,7 +28,7 @@ String logOutput[5];
 #define DHTPIN 5     // pin D1
 const int RELAY1 = 16; // pin D0 -- Fan
 const int RELAY2 = 4; // pin D2 -- Light
-const int RELAY3 = 0; // pin D3 -- Water Pump
+const int RELAY3 = 14; // pin D5 -- Water Pump
 const int RELAY4 = 2; // pin D4
 
 
@@ -215,10 +215,20 @@ void checkTemp(){
   // turn the fan on if needed
   if (temp > fanTriggerTemp){
     // -- FAN RELAY ON
-    digitalWrite(RELAY1, LOW);
+    if (RELAY1 == LOW){
+      // if same do nothing
+    } else{
+      outputDebug("Turning the fan on");
+      digitalWrite(RELAY1, LOW);
+    }
   } else{
     // -- FAN RELAY OFF
-    digitalWrite(RELAY1, HIGH);
+    if (RELAY1 == HIGH){
+      // if same do nothing
+    } else{
+      outputDebug("Turning the fan off");
+      digitalWrite(RELAY1, HIGH);
+    }
   }
 
   checkTempID = Alarm.getTriggeredAlarmId();
